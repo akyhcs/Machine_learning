@@ -170,7 +170,12 @@ A high R² but high MSE → model explains trends but makes big misses in scale.
 If you want, I can show you why relying on only R² or only MSE can be misleading by giving a stock price example where one looks 
 good but the other reveals the problem.
 
-Do you want me to do that?
+Lasso
+Ridge
+Elasticnet
+LassoCV
+RidgeCV
+ElasticnetCV
 
 
 
