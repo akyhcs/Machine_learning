@@ -1,0 +1,43 @@
+Recommended Algorithms for This Use Case
+
+1. Gradient Boosted Decision Trees (GBDT)
+
+Examples: XGBoost, LightGBM, CatBoost
+
+Why good: Captures complex feature interactions, handles non-linearity, good for tabular finance data.
+
+Strengths: Works well with small-to-medium datasets, interpretable via SHAP values, easy to tune.
+
+Use here: Classify options setups as “likely big move” vs “not likely” using features like OI change, IV rank, momentum, breakout patterns, sector strength.
+
+
+
+---
+
+2. Random Forest
+
+Why: Similar to GBDT but less sensitive to overfitting; can work well if you have noisy features.
+
+Use: As a baseline non-linear model before moving to boosting.
+
+
+
+---
+
+3. SVM (Support Vector Machine)
+
+Why: Good when you have many features but fewer samples (e.g., monthly expiry prediction with years of data).
+
+Caveat: Needs careful scaling and kernel selection; less interpretable.
+
+
+
+---
+
+4. Neural Networks (MLP / LSTM)
+
+When to use: If you have a lot of sequential intraday data and want to capture temporal dependencies.
+
+LSTM/GRU: Works well for time-series if you want to feed in sequences of OI/IV/price changes.
+
+Caveat: More data-hungry, harder to explain; prone to overfitting on small datasets.
