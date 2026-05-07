@@ -1,0 +1,135 @@
+import numpy as np
+import pandas as pd
+
+# ══════════════════════════════════════════════════════
+# 📌 CONCEPT: Handling Imbalanced Dataset
+#    Classification → Output → Categories
+#    Binary Classification (Yes=1 / No=0)
+#    Problem: 900 Yes : 100 No = 9:1 ratio ← IMBALANCED!
+#    Solutions: 1. Up Sampling   2. Down Sampling
+# ══════════════════════════════════════════════════════
+
+# Set random seed for reproducibility
+np.random.seed(123)
+
+# ──────────────────────────────────────────
+# STEP 1: Create Imbalanced Dataset
+# ──────────────────────────────────────────
+n_samples = 1000
+class_0_ratio = 0.9
+
+n_class_0 = int(n_samples * class_0_ratio)   # 900
+n_class_1 = n_samples - n_class_0            # 100
+
+print(f"Class 0 (majority): {n_class_0}")
+print(f"Class 1 (minority): {n_class_1}")
+print(f"Ratio: {n_class_0}:{n_class_1} = 9:1\n")
+
+# Create majority class (class 0) — centered at 0
+class_0 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=0, scale=1, size=n_class_0),
+    'feature_2': np.random.normal(loc=0, scale=1, size=n_class_0),
+    'target': [0] * n_class_0
+})
+
+# Create minority class (class 1) — centered at 2
+class_1 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=2, scale=1, size=n_class_1),
+    'feature_2': np.random.normal(loc=2, scale=1, size=n_class_1),
+    'target': [1] * n_class_1
+})
+
+# Combine into one dataframe
+df = pd.concat([class_0, class_1]).reset_index(drop=True)
+
+print("── Original Dataset ──")
+print(df.head())
+print(f"\nShape: {df.shape}")
+print("\nClass distribution:")
+print(df['target'].value_counts())
+print()
+
+
+# ══════════════════════════════════════════════════════
+# ✅ SOLUTION 1: UP SAMPLING (Oversample minority class)
+#    → Increase minority class to match majority
+# ══════════════════════════════════════════════════════
+from sklearn.utils import resample
+
+print("=" * 50)
+print("✅ SOLUTION 1: UP SAMPLING")
+print("=" * 50)
+
+df_minority = df[df['target'] == 1]   # 100 rows
+df_majority = df[df['target'] == 0]   # 900 rows
+
+# Upsample minority class WITH replacement to 900
+df_minority_upsampled = resample(
+    df_minority,
+    replace=True,             # Sample with replacement
+    n_samples=len(df_majority),  # Match majority count (900)
+    random_state=42
+)
+
+print(f"Minority upsampled shape: {df_minority_upsampled.shape}")
+print(df_minority_upsampled.head())
+print()
+
+# Combine majority + upsampled minority
+df_upsampled = pd.concat([df_majority, df_minority_upsampled])
+
+print("After Upsampling — Class distribution:")
+print(df_upsampled['target'].value_counts())
+# Now both classes = 900 ✅
+print()
+
+
+# ══════════════════════════════════════════════════════
+# ✅ SOLUTION 2: DOWN SAMPLING (Undersample majority class)
+#    → Reduce majority class to match minority
+# ══════════════════════════════════════════════════════
+print("=" * 50)
+print("✅ SOLUTION 2: DOWN SAMPLING")
+print("=" * 50)
+
+np.random.seed(123)
+
+# Reuse same df with class_0=900, class_1=100
+df_minority2 = df[df['target'] == 1]   # 100 rows
+df_majority2 = df[df['target'] == 0]   # 900 rows
+
+# Downsample majority class WITHOUT replacement to 100
+df_majority_downsampled = resample(
+    df_majority2,
+    replace=False,            # Sample WITHOUT replacement
+    n_samples=len(df_minority2),  # Match minority count (100)
+    random_state=42
+)
+
+print(f"Majority downsampled shape: {df_majority_downsampled.shape}")
+print(df_majority_downsampled.head())
+print()
+
+# Combine downsampled majority + minority
+df_downsampled = pd.concat([df_majority_downsampled, df_minority2])
+
+print("After Downsampling — Class distribution:")
+print(df_downsampled['target'].value_counts())
+# Now both classes = 100 ✅
+print()
+
+
+# ══════════════════════════════════════════════════════
+# 📊 SUMMARY COMPARISON
+# ══════════════════════════════════════════════════════
+print("=" * 50)
+print("📊 SUMMARY")
+print("=" * 50)
+print(f"Original dataset      : {df['target'].value_counts().to_dict()}")
+print(f"After UP Sampling     : {df_upsampled['target'].value_counts().to_dict()}")
+print(f"After DOWN Sampling   : {df_downsampled['target'].value_counts().to_dict()}")
+print()
+print("Key difference:")
+print("  ↑ Upsampling   — adds more rows (duplicates minority) → 1800 total")
+print("  ↓ Downsampling — removes rows (shrinks majority)      → 200 total")
+
