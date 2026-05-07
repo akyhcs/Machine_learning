@@ -1,0 +1,258 @@
+These are notes about **missing data** concepts in statistics/data science. Here's a clean version:
+
+---
+
+
+
+1. **Missing Completely at Random (MCAR)**
+2. **Missing at Random (MAR)**
+3. **Missing Data Not at Random (MNAR)**
+4. **Mean Value Imputation**
+5. **Mode Imputation Technique**
+
+---
+
+**Quick explanations:**
+
+**MCAR** — Missingness is totally unrelated to any data (e.g., a sensor randomly fails). Least problematic.
+
+**MAR** — Missingness depends on *other observed* variables, not the missing value itself (e.g., older people skip a question, but age is recorded).
+
+**MNAR** — Missingness depends on the *missing value itself* (e.g., high earners skip income questions). Most problematic — can introduce bias.
+
+**Mean Value Imputation** — Replace missing values with the column mean. Simple but can distort variance.
+
+**Mode Imputation** — Replace missing values with the most frequent value. Typically used for categorical data.
+
+Sure! Here are simple examples for each concept using small datasets.
+
+---
+
+## 🗃️ Base Dataset (Student Info)
+
+| Student | Age | Score | Income |
+|---------|-----|-------|--------|
+| A | 20 | 85 | 500 |
+| B | 22 | 90 | ? |
+| C | 19 | ? | 300 |
+| D | 25 | 78 | ? |
+| E | 21 | ? | 450 |
+
+---
+
+## 1️⃣ MCAR — Missing Completely at Random
+The **?** values appeared because the survey system **randomly skipped** some fields — no pattern at all.
+
+| Student | Income |
+|---------|--------|
+| A | 500 |
+| B | ❌ (random glitch) |
+| C | 300 |
+| D | ❌ (random glitch) |
+| E | 450 |
+
+✅ Safe to drop or impute — no bias introduced.
+
+---
+
+## 2️⃣ MAR — Missing at Random
+Older students (Age > 21) tend to **skip the income field** — missingness depends on **Age** (observed), not income itself.
+
+| Student | Age | Income |
+|---------|-----|--------|
+| A | 20 | 500 |
+| B | 22 | ❌ |
+| C | 19 | 300 |
+| D | 25 | ❌ |
+| E | 21 | 450 |
+
+⚠️ Pattern exists but can be handled using other columns.
+
+---
+
+## 3️⃣ MNAR — Missing Not at Random
+**High earners deliberately skipped** the income question — the missing value depends on **income itself**.
+
+| Student | Income |
+|---------|--------|
+| A | 500 |
+| B | ❌ (earns 900, didn't disclose) |
+| C | 300 |
+| D | ❌ (earns 850, didn't disclose) |
+| E | 450 |
+
+❌ Most dangerous — dropping these rows skews your analysis.
+
+---
+
+## 4️⃣ Mean Value Imputation
+Fill missing **Score** values with the **mean of known scores**.
+
+Known scores: 85, 90, 78 → Mean = **84.3**
+
+| Student | Score (Before) | Score (After) |
+|---------|---------------|---------------|
+| A | 85 | 85 |
+| B | 90 | 90 |
+| C | ❌ | **84.3** |
+| D | 78 | 78 |
+| E | ❌ | **84.3** |
+
+---
+
+## 5️⃣ Mode Imputation
+Suppose we add a **Grade** (categorical) column and fill missing values with the **most frequent grade**.
+
+| Student | Grade |
+|---------|-------|
+| A | B |
+| B | A |
+| C | B |
+| D | ❌ |
+| E | ❌ |
+
+Mode = **B** (appears most)
+
+| Student | Grade (After) |
+|---------|--------------|
+| D | **B** |
+| E | **B** |
+
+---
+
+import pandas as pd
+import numpy as np
+
+# ──────────────────────────────────────────
+# 🗃️ Base Dataset
+# ──────────────────────────────────────────
+data = {
+    'Student': ['A', 'B', 'C', 'D', 'E'],
+    'Age':     [20, 22, 19, 25, 21],
+    'Score':   [85, 90, np.nan, 78, np.nan],
+    'Income':  [500, np.nan, 300, np.nan, 450],
+    'Grade':   ['B', 'A', 'B', np.nan, np.nan]
+}
+
+df = pd.DataFrame(data)
+print("=" * 45)
+print("🗃️  ORIGINAL DATASET")
+print("=" * 45)
+print(df.to_string(index=False))
+print()
+
+
+# ──────────────────────────────────────────
+# 1️⃣ MCAR — Missing Completely at Random
+# ──────────────────────────────────────────
+print("=" * 45)
+print("1️⃣  MCAR — Missing Completely at Random")
+print("=" * 45)
+print("Income missing randomly (no pattern)")
+print()
+print(df[['Student', 'Age', 'Income']].to_string(index=False))
+print()
+print(f"  Missing Income count: {df['Income'].isna().sum()}")
+print(f"  Missing is random — safe to drop or impute")
+print()
+
+
+# ──────────────────────────────────────────
+# 2️⃣ MAR — Missing at Random
+# ──────────────────────────────────────────
+print("=" * 45)
+print("2️⃣  MAR — Missing at Random")
+print("=" * 45)
+print("Income missing because Age > 21 (pattern depends on Age)")
+print()
+
+mar_df = df[['Student', 'Age', 'Income']].copy()
+mar_df['Missing_Reason'] = mar_df.apply(
+    lambda row: '❌ Age > 21 → skipped' if pd.isna(row['Income']) else '✅',
+    axis=1
+)
+print(mar_df.to_string(index=False))
+print()
+print("  Missingness explained by 'Age' column (observed)")
+print()
+
+
+# ──────────────────────────────────────────
+# 3️⃣ MNAR — Missing Not at Random
+# ──────────────────────────────────────────
+print("=" * 45)
+print("3️⃣  MNAR — Missing Not at Random")
+print("=" * 45)
+print("High earners deliberately skipped income field")
+print()
+
+# Reveal the true (hidden) values for illustration
+mnar_df = df[['Student', 'Income']].copy()
+true_values = {1: 900, 3: 850}  # B and D (index 1, 3) are high earners
+mnar_df['True_Income'] = mnar_df['Income'].copy()
+for idx, val in true_values.items():
+    mnar_df.loc[idx, 'True_Income'] = val
+
+mnar_df['Note'] = mnar_df.apply(
+    lambda row: f"❌ Hid income ({int(row['True_Income'])})" 
+    if pd.isna(row['Income']) else '✅ Reported',
+    axis=1
+)
+print(mnar_df[['Student', 'Income', 'Note']].to_string(index=False))
+print()
+print("  ⚠️  Dropping these rows underestimates average income!")
+reported_mean = df['Income'].mean()
+true_mean = mnar_df['True_Income'].mean()
+print(f"  Reported mean income : {reported_mean:.1f}")
+print(f"  True mean income     : {true_mean:.1f}")
+print()
+
+
+# ──────────────────────────────────────────
+# 4️⃣ Mean Value Imputation
+# ──────────────────────────────────────────
+print("=" * 45)
+print("4️⃣  Mean Value Imputation (Score column)")
+print("=" * 45)
+
+mean_df = df[['Student', 'Score']].copy()
+score_mean = mean_df['Score'].mean()
+print(f"  Known scores  : {mean_df['Score'].dropna().tolist()}")
+print(f"  Calculated mean: {score_mean:.1f}")
+print()
+
+mean_df['Score_Imputed'] = mean_df['Score'].fillna(round(score_mean, 1))
+mean_df['Note'] = mean_df.apply(
+    lambda row: f"⬅️  Filled with mean ({score_mean:.1f})" 
+    if pd.isna(row['Score']) else '✅ Original',
+    axis=1
+)
+print(mean_df.to_string(index=False))
+print()
+
+
+# ──────────────────────────────────────────
+# 5️⃣ Mode Imputation
+# ──────────────────────────────────────────
+print("=" * 45)
+print("5️⃣  Mode Imputation (Grade column)")
+print("=" * 45)
+
+mode_df = df[['Student', 'Grade']].copy()
+grade_mode = mode_df['Grade'].mode()[0]
+print(f"  Known grades  : {mode_df['Grade'].dropna().tolist()}")
+print(f"  Calculated mode: '{grade_mode}'")
+print()
+
+mode_df['Grade_Imputed'] = mode_df['Grade'].fillna(grade_mode)
+mode_df['Note'] = mode_df.apply(
+    lambda row: f"⬅️  Filled with mode ('{grade_mode}')" 
+    if pd.isna(row['Grade']) else '✅ Original',
+    axis=1
+)
+print(mode_df.to_string(index=False))
+print()
+
+print("=" * 45)
+print("✅ All 5 concepts demonstrated!")
+print("=" * 45)
