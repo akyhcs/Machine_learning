@@ -1,0 +1,257 @@
+Let me walk through the code **line by line** with explanations!
+
+---
+
+## 📦 STEP 1 — Create the Imbalanced Data
+
+```python
+n_samples = 1000
+class_0_ratio = 0.9
+
+n_class_0 = int(1000 * 0.9)  # = 900
+n_class_1 = 1000 - 900        # = 100
+```
+👆 We're just doing **math** to decide how many rows each class gets.
+
+---
+
+```python
+class_0 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=0, scale=1, size=900),
+    'feature_2': np.random.normal(loc=0, scale=1, size=900),
+    'target': [0] * 900
+})
+```
+👆 Creates **900 rows** of fake data centered around **0**.
+`[0] * 900` just means → `[0, 0, 0, 0, .... 900 times]`
+
+```python
+class_1 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=2, scale=1, size=100),
+    'feature_2': np.random.normal(loc=2, scale=1, size=100),
+    'target': [1] * 100
+})
+```
+
+👆 Creates **100 rows** centered around **2** (different from class 0 so they're separable).
+
+```python
+df = pd.concat([class_0, class_1]).reset_index(drop=True)
+```
+👆 **Glues** both dataframes together into one big table of 1000 rows.
+
+---
+
+## ⬆️ STEP 2 — Upsampling
+
+```python
+df_minority = df[df['target'] == 1]   # grab the 100 rows
+df_majority = df[df['target'] == 0]   # grab the 900 rows
+```
+👆 **Split** the data back into two groups.
+
+```python
+df_minority_upsampled = resample(
+    df_minority,          # the 100 rows we want to grow
+    replace=True,         # allow picking same row more than once
+    n_samples=len(df_majority),  # grow it to 900
+    random_state=42       # so results are reproducible
+)
+```
+👆 `resample()` is like **putting 100 rows in a bag**, then randomly picking from that bag **900 times** (with putting back each time = `replace=True`).
+
+```python
+df_upsampled = pd.concat([df_majority, df_minority_upsampled])
+```
+👆 Glue majority (900) + upsampled minority (900) = **1800 rows total, balanced**.
+
+---
+
+## ⬇️ STEP 3 — Downsampling
+
+```python
+df_majority_downsampled = resample(
+    df_majority,          # the 900 rows we want to shrink
+    replace=False,        # DON'T reuse rows
+    n_samples=len(df_minority),  # shrink to 100
+    random_state=42
+)
+```
+👆 `replace=False` means **randomly pick 100 unique rows** from 900 and discard the rest.
+
+```python
+df_downsampled = pd.concat([df_majority_downsampled, df_minority])
+```
+👆 Glue downsampled majority (100) + minority (100) = **200 rows total, balanced**.
+
+---
+
+## 🧠 The Key Difference in Code
+
+| | What `resample()` does |
+|---|---|
+| **Upsampling** | `replace=True` → picks rows **with repetition** (like rolling a dice that can repeat) |
+| **Downsampling** | `replace=False` → picks rows **without repetition** (like dealing cards, no duplicates) |
+
+Both use the **same function** (`resample`), just with different settings! That's the elegant part. 😊
+
+Want me to add `print()` statements inside the code so you can **see exactly what's happening** at each step?
+
+import numpy as np
+import pandas as pd
+from sklearn.utils import resample
+
+print("=" * 55)
+print("📌 STEP 1: DECIDE HOW MANY ROWS EACH CLASS GETS")
+print("=" * 55)
+
+n_samples = 1000
+class_0_ratio = 0.9
+
+n_class_0 = int(n_samples * class_0_ratio)
+n_class_1 = n_samples - n_class_0
+
+print(f"Total samples        : {n_samples}")
+print(f"Class 0 ratio        : {class_0_ratio} (90%)")
+print(f"Class 0 count        : {n_class_0}")
+print(f"Class 1 count        : {n_class_1}")
+print(f"Imbalance ratio      : {n_class_0}:{n_class_1} = 9:1")
+
+
+# ──────────────────────────────────────────
+print("\n" + "=" * 55)
+print("📌 STEP 2: CREATE CLASS 0 (MAJORITY — 900 rows)")
+print("=" * 55)
+
+np.random.seed(123)
+
+class_0 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=0, scale=1, size=n_class_0),
+    'feature_2': np.random.normal(loc=0, scale=1, size=n_class_0),
+    'target'   : [0] * n_class_0
+})
+
+print(f"class_0 shape        : {class_0.shape}  ← 900 rows, 3 columns")
+print(f"target values        : all 0s → {class_0['target'].unique()}")
+print(f"feature_1 mean       : {class_0['feature_1'].mean():.3f}  ← centered near 0")
+print("\nFirst 3 rows of class_0:")
+print(class_0.head(3).to_string(index=False))
+
+
+# ──────────────────────────────────────────
+print("\n" + "=" * 55)
+print("📌 STEP 3: CREATE CLASS 1 (MINORITY — 100 rows)")
+print("=" * 55)
+
+class_1 = pd.DataFrame({
+    'feature_1': np.random.normal(loc=2, scale=1, size=n_class_1),
+    'feature_2': np.random.normal(loc=2, scale=1, size=n_class_1),
+    'target'   : [1] * n_class_1
+})
+
+print(f"class_1 shape        : {class_1.shape}  ← 100 rows, 3 columns")
+print(f"target values        : all 1s → {class_1['target'].unique()}")
+print(f"feature_1 mean       : {class_1['feature_1'].mean():.3f}  ← centered near 2")
+print("\nFirst 3 rows of class_1:")
+print(class_1.head(3).to_string(index=False))
+
+
+# ──────────────────────────────────────────
+print("\n" + "=" * 55)
+print("📌 STEP 4: COMBINE INTO ONE DATAFRAME")
+print("=" * 55)
+
+df = pd.concat([class_0, class_1]).reset_index(drop=True)
+
+print(f"df shape             : {df.shape}  ← 900 + 100 = 1000 rows")
+print("\nClass distribution (IMBALANCED ❌):")
+print(df['target'].value_counts())
+print("\nFirst 3 rows:")
+print(df.head(3).to_string(index=False))
+print("...(900 rows of 0s)...")
+print("\nLast 3 rows:")
+print(df.tail(3).to_string(index=False))
+print("...(100 rows of 1s)")
+
+
+# ══════════════════════════════════════════
+print("\n" + "=" * 55)
+print("⬆️  STEP 5: UPSAMPLING — Grow minority to 900")
+print("=" * 55)
+
+df_minority = df[df['target'] == 1]
+df_majority = df[df['target'] == 0]
+
+print(f"df_minority shape     : {df_minority.shape}  ← 100 rows of class 1")
+print(f"df_majority shape     : {df_majority.shape}  ← 900 rows of class 0")
+
+print("\n→ Calling resample() with replace=True ...")
+print("  (picks from 100 rows randomly, WITH repetition, 900 times)")
+
+df_minority_upsampled = resample(
+    df_minority,
+    replace=True,                    # allow duplicates
+    n_samples=len(df_majority),      # target = 900
+    random_state=42
+)
+
+print(f"\ndf_minority_upsampled shape : {df_minority_upsampled.shape}")
+print("→ 100 original rows were repeated to make 900 rows")
+
+# Show how many are duplicates
+duplicate_count = df_minority_upsampled.duplicated().sum()
+print(f"→ Duplicate rows inside upsampled data: {duplicate_count}")
+
+print("\nSample of upsampled minority:")
+print(df_minority_upsampled.head(5).to_string())
+
+df_upsampled = pd.concat([df_majority, df_minority_upsampled])
+
+print(f"\nFinal df_upsampled shape     : {df_upsampled.shape}  ← 900 + 900")
+print("\nClass distribution (BALANCED ✅):")
+print(df_upsampled['target'].value_counts())
+
+
+# ══════════════════════════════════════════
+print("\n" + "=" * 55)
+print("⬇️  STEP 6: DOWNSAMPLING — Shrink majority to 100")
+print("=" * 55)
+
+print(f"df_majority shape     : {df_majority.shape}  ← 900 rows of class 0")
+print(f"df_minority shape     : {df_minority.shape}  ← 100 rows of class 1")
+
+print("\n→ Calling resample() with replace=False ...")
+print("  (picks 100 UNIQUE rows from 900, discards the rest)")
+
+df_majority_downsampled = resample(
+    df_majority,
+    replace=False,                   # NO duplicates
+    n_samples=len(df_minority),      # target = 100
+    random_state=42
+)
+
+print(f"\ndf_majority_downsampled shape : {df_majority_downsampled.shape}")
+print("→ 800 rows were discarded, only 100 kept")
+
+print("\nSample of downsampled majority:")
+print(df_majority_downsampled.head(5).to_string())
+
+df_downsampled = pd.concat([df_majority_downsampled, df_minority])
+
+print(f"\nFinal df_downsampled shape    : {df_downsampled.shape}  ← 100 + 100")
+print("\nClass distribution (BALANCED ✅):")
+print(df_downsampled['target'].value_counts())
+
+
+# ══════════════════════════════════════════
+print("\n" + "=" * 55)
+print("📊 FINAL SUMMARY")
+print("=" * 55)
+print(f"  Original     → Class 0: 900 | Class 1: 100 | Total: 1000  ❌")
+print(f"  Upsampled    → Class 0: 900 | Class 1: 900 | Total: 1800  ✅")
+print(f"  Downsampled  → Class 0: 100 | Class 1: 100 | Total:  200  ✅")
+print()
+print("  Upsampling   = ADDED 800 duplicate rows to minority")
+print("  Downsampling = REMOVED 800 rows from majority")
+print("=" * 55)
+
