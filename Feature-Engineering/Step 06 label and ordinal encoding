@@ -1,0 +1,185 @@
+## Label Encoding vs Ordinal Encoding
+
+---
+
+## 1. Label Encoding
+
+Converts each **unique category to a random number.** No order is considered.
+
+```
+Dog   → 0
+Cat   → 1
+Bird  → 2
+```
+
+```python
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+
+df = pd.DataFrame({
+    'Animal': ['Dog', 'Cat', 'Bird', 'Dog', 'Cat']
+})
+
+le = LabelEncoder()
+df['Animal_encoded'] = le.fit_transform(df['Animal'])
+
+print(df)
+#   Animal  Animal_encoded
+#   Dog     → 1
+#   Cat     → 0
+#   Bird    → 2  (alphabetical order internally)
+#   Dog     → 1
+#   Cat     → 0
+
+# See what label maps to what
+print(le.classes_)
+# ['Bird' 'Cat' 'Dog']  → index = encoded value
+```
+
+### Reverse it back
+```python
+le.inverse_transform([0, 1, 2])
+# ['Bird', 'Cat', 'Dog']
+```
+
+---
+
+## ⚠️ Problem with Label Encoding
+
+```
+Dog  = 1
+Cat  = 0
+Bird = 2
+
+Model thinks:  Bird(2) > Dog(1) > Cat(0)
+               ← THIS IS WRONG for nominal data!
+```
+
+Use Label Encoding **only for target column** or **tree-based models.**
+
+---
+
+## 2. Ordinal Encoding
+
+Converts categories to numbers **respecting the order** you define.
+
+```
+Low    → 0
+Medium → 1
+High   → 2
+```
+
+```python
+from sklearn.preprocessing import OrdinalEncoder
+import pandas as pd
+
+df = pd.DataFrame({
+    'Size':   ['S', 'M', 'L', 'XL', 'M'],
+    'Rating': ['Low', 'High', 'Medium', 'High', 'Low']
+})
+
+# Define YOUR custom order ← most important step
+oe = OrdinalEncoder(categories=[
+    ['S', 'M', 'L', 'XL'],           # Size order
+    ['Low', 'Medium', 'High']         # Rating order
+])
+
+df[['Size_enc', 'Rating_enc']] = oe.fit_transform(df[['Size', 'Rating']])
+
+print(df)
+#   Size  Rating   Size_enc  Rating_enc
+#   S     Low      → 0          0
+#   M     High     → 1          2
+#   L     Medium   → 2          1
+#   XL    High     → 3          2
+#   M     Low      → 1          0
+```
+
+---
+
+## Manual Mapping (Simplest Way)
+
+```python
+# Even simpler — just use map()
+size_map   = {'S': 0, 'M': 1, 'L': 2, 'XL': 3}
+rating_map = {'Low': 0, 'Medium': 1, 'High': 2}
+
+df['Size_enc']   = df['Size'].map(size_map)
+df['Rating_enc'] = df['Rating'].map(rating_map)
+```
+
+---
+
+## Side by Side Comparison
+
+| Feature | Label Encoding | Ordinal Encoding |
+|---|---|---|
+| Order respected | ❌ No | ✅ Yes |
+| You define order | ❌ No | ✅ Yes |
+| Best for | Target column, Tree models | Ordinal features |
+| Risk | Implies false order | None if order is correct |
+| sklearn class | `LabelEncoder` | `OrdinalEncoder` |
+
+---
+
+## When to Use What — Decision
+
+```
+Is your data Ordinal? (has natural order)
+        │
+       YES → Ordinal Encoding
+        │     e.g. Low/Med/High, S/M/L/XL
+        │
+        NO → Is it the Target column?
+              │
+             YES → Label Encoding ✅
+              │
+              NO → Use One-Hot Encoding
+```
+
+---
+
+## Full Example Together
+
+```python
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+
+df = pd.DataFrame({
+    'Education': ['School', 'Graduate', 'Masters', 'PhD'],  # Ordinal
+    'City':      ['Delhi', 'Mumbai', 'Delhi', 'Chennai'],   # Nominal
+    'Target':    ['Yes', 'No', 'Yes', 'No']                 # Target
+})
+
+# 1. Ordinal → OrdinalEncoder (order matters)
+oe = OrdinalEncoder(categories=[['School','Graduate','Masters','PhD']])
+df['Education_enc'] = oe.fit_transform(df[['Education']])
+
+# 2. Nominal → One-Hot (no order)
+df = pd.get_dummies(df, columns=['City'], drop_first=True)
+
+# 3. Target → LabelEncoder
+le = LabelEncoder()
+df['Target_enc'] = le.fit_transform(df['Target'])
+
+print(df)
+```
+
+Output:
+```
+   Education  Target  Education_enc  City_Mumbai  City_Mumbai  Target_enc
+0  School     Yes           0.0           0            0           1
+1  Graduate   No            1.0           1            0           0
+2  Masters    Yes           2.0           0            0           1
+3  PhD        No            3.0           0            1           0
+```
+
+---
+
+## Quick Memory Trick
+
+```
+Label    → Random numbers → Target column only
+Ordinal  → YOUR ordered numbers → Size, Rating, Education
+OHE      → 0s and 1s columns → Colors, Cities, Names
+```
