@@ -1,0 +1,127 @@
+
+
+```python
+# ── Cell 1: Create imbalanced dataset ──────────────────────────
+from sklearn.datasets import make_classification
+
+X, y = make_classification(
+    n_samples=1000,
+    n_redundant=0,
+    n_features=2,
+    n_clusters_per_class=1,
+    weights=[0.90],
+    random_state=12
+)
+
+# ── Cell 2: Build DataFrame ─────────────────────────────────────
+import pandas as pd
+
+df1 = pd.DataFrame(X, columns=['f1', 'f2'])
+df2 = pd.DataFrame(y, columns=['target'])
+final_df = pd.concat([df1, df2], axis=1)
+final_df.head()
+
+# ── Cell 3: Check class imbalance ───────────────────────────────
+final_df['target'].value_counts()
+# 0 → 900
+# 1 → 100
+
+# ── Cell 4: Visualize imbalanced data ───────────────────────────
+import matplotlib.pyplot as plt
+
+plt.scatter(final_df['f1'], final_df['f2'], c=final_df['target'])
+plt.title("Before SMOTE (Imbalanced)")
+plt.show()
+
+# ── Cell 5: Install & import SMOTE ──────────────────────────────
+# !pip install imbalanced-learn
+from imblearn.over_sampling import SMOTE   # ← note: over_sampling not oversampling
+
+# ── Cell 6: Apply SMOTE ─────────────────────────────────────────
+oversample = SMOTE()
+X, y = oversample.fit_resample(final_df[['f1', 'f2']], final_df['target'])
+
+print(X.shape)  # (1800, 2)
+print(y.shape)  # (1800,)
+
+# ── Cell 7: Verify balance ──────────────────────────────────────
+print(len(y[y == 0]))  # 900
+print(len(y[y == 1]))  # 900
+
+# ── Cell 8: Visualize balanced data ─────────────────────────────
+df1 = pd.DataFrame(X, columns=['f1', 'f2'])
+df2 = pd.DataFrame(y, columns=['target'])
+oversample_df = pd.concat([df1, df2], axis=1)
+
+plt.scatter(oversample_df['f1'], oversample_df['f2'], c=oversample_df['target'])
+plt.title("After SMOTE (Balanced)")
+plt.show()
+```
+
+---
+
+## How SMOTE Works Internally
+
+### The Problem it Solves
+A model trained on 900 vs 100 samples will just predict class 0 always and still get 90% accuracy — it never really learns the minority class.
+
+---
+
+### SMOTE's Algorithm Step by Step
+
+**Step 1 — Pick a minority sample**
+It picks a random point from the minority class (class 1).
+
+```
+Point A = [1.2, 3.4]
+```
+
+**Step 2 — Find its K nearest neighbors**
+By default K=5. It looks at the 5 closest minority class points.
+
+```
+Neighbors of A: [B, C, D, E, F]
+```
+
+**Step 3 — Pick a random neighbor**
+Say it picks neighbor B = [2.0, 4.0]
+
+**Step 4 — Generate a synthetic point between A and B**
+```
+synthetic = A + random(0,1) × (B - A)
+
+# Example:
+synthetic = [1.2, 3.4] + 0.7 × ([2.0, 4.0] - [1.2, 3.4])
+synthetic = [1.2, 3.4] + 0.7 × [0.8, 0.6]
+synthetic = [1.76, 3.82]   ← new fake point!
+```
+
+It repeats this until minority class equals majority class.
+
+---
+
+### Visualizing the Idea
+
+```
+Minority points:    A ●         ● B
+
+Synthetic points:   A ●--×--×--×--● B
+                         ↑
+                    new fake samples
+                    created between
+                    real points
+```
+
+---
+
+### Why It's Better Than Simple Duplication
+
+| Approach | Problem |
+|---|---|
+| Duplicate minority rows | Model just memorizes exact same points → overfitting |
+| SMOTE synthetic points | Creates new points in the **feature space** between real points → model generalizes better |
+
+---
+
+### SMOTE's Weakness
+It can create noisy samples if minority class points are surrounded by majority class points (overlapping regions). That's why variants like **SMOTEENN** or **ADASYN** exist to handle this better.
