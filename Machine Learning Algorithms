@@ -1,0 +1,185 @@
+## Machine Learning Algorithms 
+
+---
+
+## 1. Supervised Learning
+### 📌 Regression (Predict continuous values)
+
+```
+1.  Linear Regression
+2.  Ridge Regression        (L2 regularization)
+3.  Lasso Regression        (L1 regularization)
+4.  ElasticNet Regression
+5.  Polynomial Regression
+6.  Support Vector Regression (SVR)
+7.  Decision Tree Regression
+8.  Random Forest Regression
+9.  Gradient Boosting Regression
+10. XGBoost Regression
+11. LightGBM Regression
+12. CatBoost Regression
+13. KNN Regression
+```
+
+### 📌 Classification (Predict categories)
+
+```
+1.  Logistic Regression
+2.  K-Nearest Neighbors     (KNN)
+3.  Support Vector Machine  (SVM)
+4.  Naive Bayes
+5.  Decision Tree
+6.  Random Forest
+7.  Gradient Boosting
+8.  XGBoost
+9.  LightGBM
+10. CatBoost
+11. AdaBoost
+12. Extra Trees
+13. Linear Discriminant Analysis (LDA)
+14. Quadratic Discriminant Analysis (QDA)
+```
+
+---
+
+## 2. Unsupervised Learning
+### 📌 Clustering (Group similar data)
+
+```
+1.  K-Means Clustering
+2.  Hierarchical Clustering
+3.  DBSCAN
+4.  Mean Shift
+5.  Gaussian Mixture Model  (GMM)
+6.  Agglomerative Clustering
+7.  OPTICS
+```
+
+### 📌 Dimensionality Reduction
+
+```
+1.  PCA  (Principal Component Analysis)
+2.  LDA  (Linear Discriminant Analysis)
+3.  t-SNE
+4.  UMAP
+5.  Autoencoders
+6.  SVD  (Singular Value Decomposition)
+7.  Factor Analysis
+```
+
+### 📌 Association Rule Learning
+
+```
+1.  Apriori
+2.  FP-Growth
+3.  Eclat
+```
+
+---
+
+## 3. Semi-Supervised Learning
+
+```
+1.  Self Training
+2.  Label Propagation
+3.  Label Spreading
+4.  Co-Training
+```
+
+---
+
+## 4. Reinforcement Learning
+
+```
+1.  Q-Learning
+2.  Deep Q-Network         (DQN)
+3.  SARSA
+4.  Policy Gradient
+5.  Actor-Critic
+6.  Proximal Policy Optimization (PPO)
+```
+
+---
+
+## 5. Neural Networks / Deep Learning
+
+```
+1.  Artificial Neural Network  (ANN)
+2.  Convolutional Neural Net   (CNN)   → Images
+3.  Recurrent Neural Net       (RNN)   → Sequences
+4.  Long Short-Term Memory     (LSTM)  → Time series
+5.  GRU  (Gated Recurrent Unit)
+6.  Transformer                        → NLP
+7.  BERT                               → NLP
+8.  GPT                                → Text generation
+9.  GAN  (Generative Adversarial Net)  → Image generation
+10. Autoencoder                        → Anomaly detection
+```
+
+---
+
+## 6. Ensemble Methods
+
+```
+1.  Bagging      → Random Forest
+2.  Boosting     → XGBoost, AdaBoost, LightGBM
+3.  Stacking     → combine multiple models
+4.  Voting       → majority vote of models
+5.  Blending     → weighted average of models
+```
+
+---
+
+## Quick Reference — When to Use What
+
+| Problem | Algorithm |
+|---|---|
+| Predict house price | Linear Regression |
+| Spam detection | Naive Bayes, Logistic Regression |
+| Image recognition | CNN |
+| Customer segmentation | K-Means |
+| Fraud detection | Isolation Forest, XGBoost |
+| Recommendation | Collaborative Filtering |
+| Time series | LSTM, ARIMA |
+| Text classification | BERT, Naive Bayes |
+| Anomaly detection | Autoencoder, DBSCAN |
+| Tabular data | XGBoost, Random Forest |
+
+---
+
+## Roadmap — What to Learn in Order
+
+```
+BEGINNER
+├── Linear Regression
+├── Logistic Regression
+├── KNN
+├── Naive Bayes
+└── Decision Tree
+
+INTERMEDIATE
+├── Random Forest
+├── SVM
+├── XGBoost / LightGBM
+├── K-Means Clustering
+└── PCA
+
+ADVANCED
+├── Neural Networks (ANN)
+├── CNN / RNN / LSTM
+├── Transformers / BERT
+├── GANs
+└── Reinforcement Learning
+```
+
+---
+
+## Most Used in Industry (2024)
+
+```
+🥇 XGBoost / LightGBM  → Kaggle competitions, tabular data
+🥈 Random Forest        → Robust, interpretable
+🥉 Logistic Regression  → Baseline, fast
+🏅 Neural Networks      → Images, NLP, complex tasks
+🏅 K-Means              → Segmentation
+```
