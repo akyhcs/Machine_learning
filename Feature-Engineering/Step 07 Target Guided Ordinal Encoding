@@ -1,0 +1,198 @@
+## Target Guided Ordinal Encoding
+
+---
+
+## What is it?
+
+Instead of assigning order **manually or randomly**, we let the **target variable decide the order.**
+
+```
+Category with LOWEST  mean target → gets rank 0
+Category with HIGHEST mean target → gets highest rank
+```
+
+---
+
+## Simple Example
+
+```
+City     Target(Salary)
+Delhi    → 30,000
+Mumbai   → 80,000
+Chennai  → 50,000
+Kolkata  → 40,000
+```
+
+**Mean salary per city:**
+```
+Delhi   → 30,000  → rank 0  (lowest)
+Kolkata → 40,000  → rank 1
+Chennai → 50,000  → rank 2
+Mumbai  → 80,000  → rank 3  (highest)
+```
+
+So encoding is **data-driven** not assumption-driven ✅
+
+---
+
+## Full Code
+
+```python
+import pandas as pd
+import numpy as np
+
+# ── Sample Dataset ──────────────────────────────────────────────
+df = pd.DataFrame({
+    'City': ['Delhi','Mumbai','Chennai','Kolkata',
+             'Delhi','Mumbai','Chennai','Mumbai'],
+    'Salary': [30000, 80000, 50000, 40000,
+               35000, 90000, 55000, 85000]
+})
+
+print(df)
+#       City  Salary
+# 0    Delhi   30000
+# 1   Mumbai   80000
+# 2  Chennai   50000
+# 3  Kolkata   40000
+# 4    Delhi   35000
+# 5   Mumbai   90000
+# 6  Chennai   55000
+# 7   Mumbai   85000
+```
+
+---
+
+## Step 1 — Calculate Mean Target per Category
+
+```python
+# Mean salary for each city
+mean_target = df.groupby('City')['Salary'].mean()
+print(mean_target)
+
+# City
+# Chennai    52500.0   ← rank 2
+# Delhi      32500.0   ← rank 0
+# Kolkata    40000.0   ← rank 1
+# Mumbai     85000.0   ← rank 3
+```
+
+---
+
+## Step 2 — Rank Them (Lowest to Highest)
+
+```python
+# rank() assigns ordinal rank based on mean
+ordinal_map = mean_target.rank().to_dict()
+print(ordinal_map)
+
+# {'Chennai': 2.0, 'Delhi': 1.0, 'Kolkata': 2.0, 'Mumbai': 4.0}
+```
+
+---
+
+## Step 3 — Map Back to Original Column
+
+```python
+df['City_encoded'] = df['City'].map(ordinal_map)
+print(df)
+
+#       City  Salary  City_encoded
+# 0    Delhi   30000           1.0
+# 1   Mumbai   80000           4.0
+# 2  Chennai   50000           2.0
+# 3  Kolkata   40000           2.0
+# 4    Delhi   35000           1.0
+# 5   Mumbai   90000           4.0
+# 6  Chennai   55000           2.0
+# 7   Mumbai   85000           4.0
+```
+
+---
+
+## Complete Reusable Function
+
+```python
+def target_guided_ordinal_encoding(df, feature, target):
+    """
+    Encodes a categorical feature based on mean of target variable
+    
+    df      : DataFrame
+    feature : column to encode (e.g. 'City')
+    target  : target column    (e.g. 'Salary')
+    """
+    # Step 1: Mean target per category
+    mean_target = df.groupby(feature)[target].mean()
+    
+    # Step 2: Rank categories by mean target
+    ordinal_map = mean_target.rank().to_dict()
+    
+    # Step 3: Map to new column
+    df[feature + '_encoded'] = df[feature].map(ordinal_map)
+    
+    print(f"\nMapping used for '{feature}':")
+    print(ordinal_map)
+    
+    return df
+
+# ── Usage ───────────────────────────────────────────────────────
+df = target_guided_ordinal_encoding(df, 'City', 'Salary')
+```
+
+---
+
+## Visualize the Encoding Logic
+
+```python
+import matplotlib.pyplot as plt
+
+mean_vals = df.groupby('City')['Salary'].mean().sort_values()
+
+mean_vals.plot(kind='bar', color='skyblue', figsize=(8,4))
+plt.title("Mean Salary per City (basis of encoding)")
+plt.ylabel("Mean Salary")
+plt.xlabel("City")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Comparison — All 3 Ordinal Approaches
+
+| Approach | Order Based On | Risk |
+|---|---|---|
+| **Manual** `{'S':0,'M':1,'L':2}` | Your assumption | Wrong if assumption bad |
+| **Label Encoding** | Alphabetical | Random, no meaning |
+| **Target Guided** | Actual target data | Data-driven ✅ |
+
+---
+
+## When to Use
+
+```
+✅ High cardinality columns (many cities, zip codes)
+✅ When category clearly impacts target
+✅ Better than OHE when categories are 10+
+❌ Don't use on test data alone → always fit on train data only!
+```
+
+---
+
+## Train/Test Safe Version
+
+```python
+# Fit only on TRAIN data
+mean_target = X_train.groupby('City')['Salary'].mean()
+ordinal_map = mean_target.rank().to_dict()
+
+# Apply to BOTH train and test
+X_train['City_enc'] = X_train['City'].map(ordinal_map)
+X_test['City_enc']  = X_test['City'].map(ordinal_map)
+
+# Handle unseen cities in test data
+X_test['City_enc'].fillna(X_test['City_enc'].median(), inplace=True)
+```
+
+This prevents **data leakage** — one of the most common ML mistakes! 🚨
