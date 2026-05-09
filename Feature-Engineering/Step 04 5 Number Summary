@@ -1,0 +1,84 @@
+## 5 Number Summary
+
+It describes a dataset using exactly **5 values:**
+
+| # | Name | What it means |
+|---|---|---|
+| 1 | **Minimum** | Smallest value |
+| 2 | **Q1** (25th percentile) | 25% of data is below this |
+| 3 | **Median** (Q2) | Middle value, 50% below |
+| 4 | **Q3** (75th percentile) | 75% of data is below this |
+| 5 | **Maximum** | Largest value |
+
+### Quick Example
+```python
+data = [2, 5, 7, 8, 10, 12, 15, 18, 20, 25]
+
+Min    = 2
+Q1     = 7
+Median = 11
+Q3     = 18
+Max    = 25
+```
+
+---
+
+## Box Plot — Visual of the 5 Number Summary
+
+```
+    Min   Q1     Median  Q3     Max
+     |     |        |     |      |
+     ●─────[════════|═════]──────●
+               IQR (box)
+```
+
+- The **box** spans Q1 → Q3 (called IQR = Q3 - Q1)
+- The **line inside box** = Median
+- The **whiskers** extend to Min and Max
+- **Dots beyond whiskers** = Outliers
+
+---
+
+## Python Code
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+data = [2, 5, 7, 8, 10, 12, 15, 18, 20, 25]
+
+# 5 Number Summary
+print("Min    :", np.min(data))
+print("Q1     :", np.percentile(data, 25))
+print("Median :", np.median(data))
+print("Q3     :", np.percentile(data, 75))
+print("Max    :", np.max(data))
+
+# Box Plot
+plt.boxplot(data)
+plt.title("Box Plot")
+plt.show()
+```
+
+---
+
+## How Outliers are Detected
+
+```
+Lower fence = Q1 - 1.5 × IQR
+Upper fence = Q3 + 1.5 × IQR
+
+Anything outside these fences = Outlier ⚠️
+```
+
+So if IQR = 18 - 7 = **11**:
+- Lower fence = 7 - 16.5 = **-9.5**
+- Upper fence = 18 + 16.5 = **34.5**
+- Nothing in our data exceeds these → **no outliers** ✅
+
+---
+
+## Why It Matters in ML
+- Quickly spot **skewness** in data
+- Identify **outliers** before training
+- Compare **feature distributions** side by side using multiple box plots
