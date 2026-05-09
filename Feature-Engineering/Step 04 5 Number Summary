@@ -82,3 +82,322 @@ So if IQR = 18 - 7 = **11**:
 - Quickly spot **skewness** in data
 - Identify **outliers** before training
 - Compare **feature distributions** side by side using multiple box plots
+
+
+## Skewness
+
+Skewness tells you **which side the tail of your data is stretched toward.**
+
+---
+
+## 3 Types
+
+### 1. Normal Distribution (Zero Skew)
+```
+        ▲
+        │    ●
+        │   ●●●
+        │  ●●●●●
+        │ ●●●●●●●
+        └──────────→
+    Mean = Median = Mode
+```
+Perfectly symmetric. No skew.
+
+---
+
+### 2. Right Skew (Positive Skew)
+```
+        ▲
+        │●
+        │●●
+        │●●●
+        │●●●●●●●●●●........
+        └──────────────────→
+    Mode < Median < Mean
+```
+Tail stretches to the **right.** Mean gets pulled by high values.
+
+**Real example:** Income data — most people earn less, few earn crores → pulls mean right.
+
+---
+
+### 3. Left Skew (Negative Skew)
+```
+        ▲
+                          ●│
+                        ●●●│
+                      ●●●●●│
+        ..........●●●●●●●●●│
+        └──────────────────→
+    Mean < Median < Mode
+```
+
+Tail stretches to the **left.**
+
+**Real example:** Age at retirement — most retire around 60, very few retire very early.
+
+---
+
+## Python Code
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+data = [10, 12, 13, 13, 14, 15, 16, 50, 80, 100]
+
+print("Skewness:", pd.Series(data).skew())
+# Positive value = Right skew
+# Negative value = Left skew
+# Near 0         = Symmetric
+
+plt.hist(data, bins=10)
+plt.title("Histogram — check the tail!")
+plt.show()
+```
+
+---
+
+## Simple Rule to Remember
+
+| Skewness Value | Meaning |
+|---|---|
+| Near **0** | Symmetric |
+| **Positive** (+ve) | Right tail → right skew |
+| **Negative** (-ve) | Left tail → left skew |
+
+---
+
+## Why It Matters in ML
+- Many algorithms (Linear Regression, etc.) **assume normal distribution**
+- High skewness → apply **log transform** or **sqrt transform** to fix it
+
+```python
+import numpy as np
+df['column'] = np.log1p(df['column'])  # fixes right skew
+```
+
+## Outlier
+
+An outlier is a **data point that is very different from the rest of the data** — too high or too low.
+
+---
+
+## Simple Example
+
+```
+data = [10, 12, 11, 13, 12, 11, 200]
+                                 ↑
+                            OUTLIER! 😱
+```
+Everyone scored around 10-13, but one value is 200 — clearly doesn't belong.
+
+---
+
+## Visual in Box Plot
+
+```
+                         Outlier
+                            ●
+    |                       
+    ●──────[══════|═════]──●
+    │                      │
+   Min                    Max
+   (whisker)           (whisker)
+
+Anything beyond whiskers = Outlier
+```
+
+---
+
+## How to Detect Outliers
+
+### Method 1 — IQR Method (Most Common)
+```python
+Q1  = df['col'].quantile(0.25)
+Q3  = df['col'].quantile(0.75)
+IQR = Q3 - Q1
+
+lower = Q1 - 1.5 * IQR
+upper = Q3 + 1.5 * IQR
+
+# Find outliers
+outliers = df[(df['col'] < lower) | (df['col'] > upper)]
+```
+
+### Method 2 — Z-Score Method
+```python
+from scipy import stats
+import numpy as np
+
+z_scores = np.abs(stats.zscore(df['col']))
+
+# Z-score > 3 = outlier
+outliers = df[z_scores > 3]
+```
+
+---
+
+## How to Handle Outliers
+
+| Strategy | When to Use |
+|---|---|
+| **Remove** them | When they're data entry errors |
+| **Cap** them (Winsorization) | Keep but limit extreme values |
+| **Log transform** | Compress large values |
+| **Keep** them | When they're genuine (e.g. fraud detection) |
+
+```python
+# Capping example
+df['col'] = df['col'].clip(lower=lower, upper=upper)
+```
+
+---
+
+## Why It Matters in ML
+
+- **Linear Regression** → outliers drag the line badly
+- **Mean** → heavily affected by outliers
+- **Median** → not affected ✅ (use this when outliers exist)
+
+```
+data  = [10, 11, 12, 13, 200]
+
+Mean   = 49.2  ← pulled by 200 😬
+Median = 12    ← not affected ✅
+```
+
+---
+
+## Real World Examples
+- **Salary data** — CEO salary vs employees
+- **House prices** — one mansion in a normal neighborhood
+- **Fraud detection** — unusual transaction amount
+
+
+## Side by Side Box Plots — Compare Feature Distributions
+
+---
+
+## Full Code
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+# ── Create Sample Dataset ───────────────────────────────────────
+np.random.seed(42)
+
+df = pd.DataFrame({
+    'Age':    np.random.normal(35, 10, 200),      # normal
+    'Salary': np.random.exponential(50000, 200),  # right skewed
+    'Score':  np.random.uniform(0, 100, 200),     # uniform
+    'Height': np.random.normal(165, 15, 200),     # normal
+})
+
+# ── Method 1: Simple Side by Side ──────────────────────────────
+df.boxplot(figsize=(10, 6))
+plt.title("All Features Side by Side")
+plt.show()
+```
+
+---
+
+## Method 2 — Styled with Subplots (Better)
+
+```python
+fig, axes = plt.subplots(1, 4, figsize=(14, 6))
+
+features = ['Age', 'Salary', 'Score', 'Height']
+colors   = ['skyblue', 'salmon', 'lightgreen', 'plum']
+
+for i, (feature, color) in enumerate(zip(features, colors)):
+    axes[i].boxplot(
+        df[feature],
+        patch_artist=True,                        # fills box with color
+        boxprops=dict(facecolor=color),
+        medianprops=dict(color='black', linewidth=2)
+    )
+    axes[i].set_title(feature)
+    axes[i].set_xlabel("")
+
+plt.suptitle("Feature Distributions Comparison", fontsize=14)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Method 3 — Seaborn (Cleanest)
+
+```python
+import seaborn as sns
+
+# Melt dataframe to long format (seaborn needs this)
+df_melted = df.melt(var_name='Feature', value_name='Value')
+
+plt.figure(figsize=(12, 6))
+sns.boxplot(
+    data=df_melted,
+    x='Feature',
+    y='Value',
+    palette='Set2'
+)
+plt.title("Feature Distributions — Seaborn")
+plt.show()
+```
+
+---
+
+## What to Look for in Each Box
+
+```
+Feature A          Feature B          Feature C
+                                          ●  ← outlier
+   [═══|══]        [══|══════]       [═══|═]
+   Symmetric       Right Skewed       Outliers
+   ✅ Good          ⚠️ Log transform    ⚠️ Handle outliers
+```
+
+---
+
+## Reading the Comparison
+
+| What You See | What It Means |
+|---|---|
+| Box is **centered** | Symmetric, normally distributed |
+| Box shifted **upward** | Right skew |
+| Box shifted **downward** | Left skew |
+| **Long whisker** one side | Skewed that direction |
+| **Dots** outside whiskers | Outliers |
+| **Tall box** | High variance / spread |
+| **Short box** | Low variance, consistent data |
+
+---
+
+## Compare Before vs After Scaling
+
+```python
+from sklearn.preprocessing import StandardScaler
+
+scaler     = StandardScaler()
+df_scaled  = pd.DataFrame(
+    scaler.fit_transform(df),
+    columns=df.columns
+)
+
+# Plot before and after together
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+df.boxplot(ax=ax1)
+ax1.set_title("Before Scaling")
+
+df_scaled.boxplot(ax=ax2)
+ax2.set_title("After Scaling")
+
+plt.tight_layout()
+plt.show()
+```
+
+This is very useful in ML to see if features are on the **same scale** before feeding into a model like KNN or SVM which are distance-based algorithms.
