@@ -1,0 +1,266 @@
+## Red Wine Dataset — Complete EDA
+
+---
+
+## About the Dataset
+
+```
+Source  : UCI Machine Learning Repository
+Rows    : 1599 wines
+Columns : 12
+Target  : quality (score 0-10)
+```
+
+### Features
+```
+Fixed Acidity        → tartaric acid content
+Volatile Acidity     → acetic acid (too high = bad taste)
+Citric Acid          → freshness
+Residual Sugar       → sugar after fermentation
+Chlorides            → salt content
+Free Sulfur Dioxide  → prevents microbial growth
+Total Sulfur Dioxide → total SO2
+Density              → depends on alcohol & sugar
+pH                   → acidity level (0-14)
+Sulphates            → wine preservative
+Alcohol              → % alcohol content
+Quality              → target (3 to 8)
+```
+
+---
+
+## Step 1 — Load Dataset
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load directly from URL
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+df = pd.read_csv(url, sep=';')
+
+print(df.shape)        # (1599, 12)
+print(df.head())
+print(df.columns.tolist())
+```
+
+---
+
+## Step 2 — Basic Info
+
+```python
+# Data types and null check
+df.info()
+
+# Statistical summary
+df.describe()
+
+# Check missing values
+print(df.isnull().sum())
+# Red wine dataset has NO missing values ✅
+
+# Check duplicates
+print(df.duplicated().sum())  # 240 duplicates!
+df = df.drop_duplicates()
+print(df.shape)  # (1359, 12)
+```
+
+---
+
+## Step 3 — Target Variable Analysis
+
+```python
+# Quality distribution
+print(df['quality'].value_counts())
+# 5    681
+# 6    638
+# 7    199
+# 4     53
+# 8     18
+# 3    10
+
+plt.figure(figsize=(8,4))
+sns.countplot(x='quality', data=df, palette='Reds')
+plt.title("Wine Quality Distribution")
+plt.show()
+```
+
+Output insight:
+```
+Most wines are quality 5 or 6
+Very few are 3 (bad) or 8 (excellent)
+→ Imbalanced dataset!
+```
+
+---
+
+## Step 4 — Binary Classification (Good vs Bad)
+
+```python
+# Simplify: quality >= 7 → Good(1), else Bad(0)
+df['quality_label'] = (df['quality'] >= 7).astype(int)
+
+print(df['quality_label'].value_counts())
+# 0 (Bad)  → 1382
+# 1 (Good) →  217
+# Very imbalanced → may need SMOTE!
+```
+
+---
+
+## Step 5 — Distribution of Each Feature
+
+```python
+df.hist(bins=20, figsize=(15, 10), color='red', alpha=0.6)
+plt.suptitle("Feature Distributions", fontsize=16)
+plt.tight_layout()
+plt.show()
+```
+
+Key observations:
+```
+Alcohol          → slightly right skewed
+Residual Sugar   → heavily right skewed
+Chlorides        → heavily right skewed (outliers!)
+Volatile Acidity → slightly right skewed
+```
+
+---
+
+## Step 6 — Box Plots (Outlier Detection)
+
+```python
+plt.figure(figsize=(15, 8))
+
+for i, col in enumerate(df.columns[:-2]):
+    plt.subplot(3, 4, i+1)
+    sns.boxplot(y=df[col], color='tomato')
+    plt.title(col)
+
+plt.suptitle("Box Plots — Outlier Detection", fontsize=14)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Step 7 — Correlation Heatmap
+
+```python
+plt.figure(figsize=(12, 8))
+sns.heatmap(
+    df.corr(),
+    annot=True,
+    fmt='.2f',
+    cmap='Reds',
+    linewidths=0.5
+)
+plt.title("Correlation Heatmap")
+plt.show()
+```
+
+Key correlations with quality:
+```
+Alcohol          → +0.48 ✅ strong positive
+Volatile Acidity → -0.39 ✅ strong negative
+Sulphates        → +0.25
+Citric Acid      → +0.23
+Density          → -0.17
+```
+
+---
+
+## Step 8 — Feature vs Quality
+
+```python
+# How each feature varies with quality
+fig, axes = plt.subplots(3, 4, figsize=(16, 10))
+axes = axes.flatten()
+
+features = df.columns[:-2]
+
+for i, feature in enumerate(features):
+    sns.boxplot(
+        x='quality',
+        y=feature,
+        data=df,
+        ax=axes[i],
+        palette='Reds'
+    )
+    axes[i].set_title(feature)
+
+plt.suptitle("Features vs Wine Quality", fontsize=14)
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Step 9 — Skewness Check
+
+```python
+skewness = df.skew().sort_values(ascending=False)
+print(skewness)
+
+# residual sugar      → 4.5  🚨 highly skewed
+# chlorides           → 5.6  🚨 highly skewed
+# free sulfur dioxide → 1.2  ⚠️  moderate
+# alcohol             → 0.8  ✅  mild
+```
+
+Fix skewness:
+```python
+import numpy as np
+
+df['residual sugar_log'] = np.log1p(df['residual sugar'])
+df['chlorides_log']      = np.log1p(df['chlorides'])
+```
+
+---
+
+## Step 10 — Pair Plot
+
+```python
+# Relationship between top features
+top_features = ['alcohol', 'volatile acidity',
+                'sulphates', 'citric acid', 'quality']
+
+sns.pairplot(df[top_features], hue='quality',
+             palette='Reds', diag_kind='kde')
+plt.suptitle("Pair Plot — Top Features", y=1.02)
+plt.show()
+```
+
+---
+
+## EDA Summary — Key Insights
+
+```
+1. Quality     → mostly 5 & 6, imbalanced
+2. Alcohol     → higher alcohol = better quality ✅
+3. Volatile    → higher acidity = worse quality ❌
+   Acidity
+4. Sulphates   → more sulphates = better quality ✅
+5. Residual    → heavily skewed, needs log transform
+   Sugar
+6. Chlorides   → many outliers, needs treatment
+7. Density &   → highly correlated with each other
+   Fixed Acidity  (multicollinearity!)
+```
+
+---
+
+## Next Steps After EDA
+
+```python
+# 1. Handle outliers      → IQR method
+# 2. Fix skewness         → log transform
+# 3. Scale features       → StandardScaler
+# 4. Handle imbalance     → SMOTE
+# 5. Feature selection    → drop low correlation
+# 6. Train ML model       → Logistic Regression
+#                            Random Forest
+#                            XGBoost
+```
